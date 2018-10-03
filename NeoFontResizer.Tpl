@@ -3,7 +3,7 @@
  #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
  #!------------------------------------------------------------------------------
  #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.02')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.03')
 #!------------------------------------------------------------------------------
 #Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global'),Application(LocalNeoFontResizer(NeoFontResizer))
 #BOXED('')
@@ -13,16 +13,16 @@
      #DISPLAY('Copyright (C) 2018 by Bostjan Laba')
      #DISPLAY('E-Mail: bostjan@neolink.si')
      #DISPLAY('All Rights Reserved')
-     #DISPLAY('')     
+     #DISPLAY('')
      #Display('Use NFRDisable=True before opening the window')
      #DISPLAY('to disable resizing at runtime.')
      #DISPLAY('')
      #Display('Call NFRReset() to reset font sizes')
      #DISPLAY('to original size when window is open.')
-     #DISPLAY('')     
+     #DISPLAY('')
      #Display('Call NFRSet() to set font sizes')
      #DISPLAY('to proportional size when window is open.')
-     #DISPLAY('')     
+     #DISPLAY('')
 #ENDBOXED
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
@@ -44,10 +44,10 @@
    #DISPLAY('')
    #Display('Call NFRReset() to reset font sizes')
    #DISPLAY('to original size when window is open.')
-   #DISPLAY('')     
+   #DISPLAY('')
    #Display('Call NFRSet() to set font sizes')
    #DISPLAY('to proportional size when window is open.')
-   #DISPLAY('')     
+   #DISPLAY('')
 #ENDBOXED
 #AT(%LocalDataAfterClasses),PRIORITY(4000),Where(%DisableNeoFontResizerLocal=%false),Description('Neo Font Resizer (local) - Data Declaration')
 !Added by Neo Font Resizer - START (DATA SECTION)
@@ -72,7 +72,7 @@ ListHeight      LONG
 FontSize        LONG
 ColumnId        LONG,Name('cid')
 ColumnWidth     LONG
-            END            
+            END
 !Added by Neo Font Resizer - END (DATA SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
@@ -104,8 +104,8 @@ ColumnWidth     LONG
     !Added by Neo Font Resizer - END (AFTER WINDOW OPEN SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
-#AT(%ResizerMethodCodeSection),Where(%DisableNeoFontResizerLocal=%false AND %pClassMethod='Resize'),PRIORITY(5001),DESCRIPTION('Neo Font Resizer (local) - Resizer Section')
-    !Added by Neo Font Resizer - START (RESIZER SECTION)¸
+#AT(%ResizerMethodCodeSection),Where(%DisableNeoFontResizerLocal=%false AND %pClassMethod='Resize' AND %pClassMethodPrototype='(),BYTE'),PRIORITY(5001),DESCRIPTION('Neo Font Resizer (local) - Resizer Section')
+    !Added by Neo Font Resizer - START (RESIZER SECTION)ï¿½
     If NFRDisable=False 	!Resizing remains enabled
     	 NFRSet()						!Call the procedure to resize fonts
     END
@@ -116,12 +116,12 @@ ColumnWidth     LONG
     !Added by Neo Font Resizer - START (KILL SECTION)
     FREE(listqueue)
     !Added by Neo Font Resizer - END (KILL SECTION)
-#ENDAT      
+#ENDAT
 #!------------------------------------------------------------------------------
 #At(%LocalProcedures,,'(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(8001),DESCRIPTION('Neo Font Resizer (local) - Reset Procedure')
     !Added by Neo Font Resizer - START (LOCAL PROCEDURE SECTION)
 NFRSet    PROCEDURE
-    CODE 
+    CODE
    	WidthRatio  = 0{Prop:At,3}/startwidth
     	HeightRatio = 0{Prop:At,4}/startheight
     	IF widthratio < heightratio
@@ -156,9 +156,9 @@ NFRSet    PROCEDURE
     	END
  RETURN
 NFRReset    PROCEDURE
-    CODE 
+    CODE
     	LOOP
-      	  ThisField = 0{Prop:NextField,ThisField}  !Process every control        	
+      	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
         	IF ThisField
           	  IF thisfield{Prop:Type} < Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
            	     ThisField{Prop:FontSize} = StartFont
@@ -182,8 +182,8 @@ NFRReset    PROCEDURE
         	END
     	END
  RETURN
-    !Added by Neo Font Resizer - END (LOCAL PROCEDURE SECTION)    
-#ENDAT      
+    !Added by Neo Font Resizer - END (LOCAL PROCEDURE SECTION)
+#ENDAT
 #! -------------------------------------------------------------------------
 #GROUP(%CResizeHasTemplate,STRING %PassedTemplate),AUTO,PRESERVE
   #FOR(%ActiveTemplate),WHERE(%ActiveTemplate=%PassedTemplate)
