@@ -3,16 +3,13 @@
  #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
  #!------------------------------------------------------------------------------
  #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.03')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.04')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global'),Application(LocalNeoFontResizer(NeoFontResizer))
-#BOXED('')
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.04'),Application(LocalNeoFontResizer(NeoFontResizer))
+#SHEET
+ #TAB('Functions')
+  #BOXED('')
      #DISPLAY('Neo Font Resizer Version '& %NeoFontResizerTPLVersion)
-     #DISPLAY('32 Bit only')
-     #DISPLAY('')
-     #DISPLAY('Copyright (C) 2018 by Bostjan Laba')
-     #DISPLAY('E-Mail: bostjan@neolink.si')
-     #DISPLAY('All Rights Reserved')
      #DISPLAY('')
      #Display('Use NFRDisable=True before opening the window')
      #DISPLAY('to disable resizing at runtime.')
@@ -23,11 +20,24 @@
      #Display('Call NFRSet() to set font sizes')
      #DISPLAY('to proportional size when window is open.')
      #DISPLAY('')
-#ENDBOXED
+   #ENDBOXED
+  #ENDTAB
+  #TAB('About')
+   #BOXED('')
+      #DISPLAY('Neo Font Resizer Version '& %NeoFontResizerTPLVersion)
+      #DISPLAY('32 Bit only')
+      #DISPLAY('')
+      #DISPLAY('Copyright (C) 2018 by Bostjan Laba')
+      #DISPLAY('E-Mail: bostjan@neolink.si')
+      #DISPLAY('All Rights Reserved')
+      #DISPLAY('')
+    #ENDBOXED
+   #ENDTAB
+#ENDSHEET
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.04') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
@@ -133,7 +143,7 @@ NFRSet    PROCEDURE
       	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
         	!ThisField{Prop:Font}='Arial CE'
         	IF ThisField
-          	  IF thisfield{Prop:Type} < Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
+          	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
            	     ThisField{Prop:FontSize} = ROUND(StartFont * Ratio,1)
             	END
             	IF thisfield{Prop:Type} = Create:List
@@ -160,7 +170,7 @@ NFRReset    PROCEDURE
     	LOOP
       	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
         	IF ThisField
-          	  IF thisfield{Prop:Type} < Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
+          	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
            	     ThisField{Prop:FontSize} = StartFont
             	END
             	IF thisfield{Prop:Type} = Create:List
