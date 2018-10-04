@@ -3,9 +3,9 @@
  #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
  #!------------------------------------------------------------------------------
  #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.05')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.06')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.05'),Application(LocalNeoFontResizer(NeoFontResizer))
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.06'),Application(LocalNeoFontResizer(NeoFontResizer))
 #SHEET
  #TAB('Functions')
   #BOXED('')
@@ -37,7 +37,7 @@
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.05') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.06') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
@@ -134,6 +134,7 @@ FontSize        LONG
 #At(%WindowManagerMethodCodeSection,'Kill','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(5001),DESCRIPTION('Neo Font Resizer (local) - Kill Section')
     !Added by Neo Font Resizer - START (KILL SECTION)
     FREE(listqueue)
+    FREE(contrlqueue)
     !Added by Neo Font Resizer - END (KILL SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
