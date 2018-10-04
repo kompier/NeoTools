@@ -3,9 +3,9 @@
  #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
  #!------------------------------------------------------------------------------
  #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.04')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.05')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.04'),Application(LocalNeoFontResizer(NeoFontResizer))
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.05'),Application(LocalNeoFontResizer(NeoFontResizer))
 #SHEET
  #TAB('Functions')
   #BOXED('')
@@ -37,7 +37,7 @@
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.04') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.05') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
@@ -83,13 +83,17 @@ FontSize        LONG
 ColumnId        LONG,Name('cid')
 ColumnWidth     LONG
             END
+ControlQueue  QUEUE
+Id              LONG
+FontSize        LONG
+            END
 !Added by Neo Font Resizer - END (DATA SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
 #AT(%WindowManagerMethodCodeSection,'Init','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),PRIORITY(8001),Description('Neo Font Resizer (local) - ABC Init')
     !Added by Neo Font Resizer - START (AFTER WINDOW OPEN SECTION)
     GETPOSITION(0,StartXpos,StartYpos,StartWidth,StartHeight)
-    StartFont = 0{Prop:FontSize}
+    !StartFont = 0{Prop:FontSize} !Fontsize of the whole window
     FREE(listqueue)
     LOOP
         ThisField = 0{Prop:NextField,ThisField}  !Process every control
@@ -106,6 +110,11 @@ ColumnWidth     LONG
                     columns# += 1
                 END
                 columns# = 0
+            END
+            IF ThisField{prop:type} <> Create:List
+                  ControlQueue:Id = ThisField
+                  ControlQueue:FontSize = ThisField {prop:fontsize}
+                  ADD(ControlQueue)
             END
         ELSE
             BREAK !Break when done
@@ -141,10 +150,11 @@ NFRSet    PROCEDURE
     	END
     	LOOP
       	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
-        	!ThisField{Prop:Font}='Arial CE'
         	IF ThisField
           	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
-           	     ThisField{Prop:FontSize} = ROUND(StartFont * Ratio,1)
+                 Controlqueue:Id=ThisField
+                 get(ControlQueue,ControlQueue:Id)
+           	     ThisField{Prop:FontSize} = ROUND(ControlQueue:FontSize * Ratio,1)
             	END
             	IF thisfield{Prop:Type} = Create:List
              	   listqueue:id = thisfield
