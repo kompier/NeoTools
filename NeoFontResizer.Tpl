@@ -3,9 +3,9 @@
  #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
  #!------------------------------------------------------------------------------
  #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.06')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.07')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.06'),Application(LocalNeoFontResizer(NeoFontResizer))
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.07'),Application(LocalNeoFontResizer(NeoFontResizer))
 #SHEET
  #TAB('Functions')
   #BOXED('')
@@ -37,7 +37,7 @@
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.06') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.07') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
@@ -83,7 +83,7 @@ FontSize        LONG
 ColumnId        LONG,Name('cid')
 ColumnWidth     LONG
             END
-ControlQueue  QUEUE
+ControlsQueue  QUEUE
 Id              LONG
 FontSize        LONG
             END
@@ -112,9 +112,9 @@ FontSize        LONG
                 columns# = 0
             END
             IF ThisField{prop:type} <> Create:List
-                  ControlQueue:Id = ThisField
-                  ControlQueue:FontSize = ThisField {prop:fontsize}
-                  ADD(ControlQueue)
+                  ControlsQueue:Id = ThisField
+                  ControlsQueue:FontSize = ThisField {prop:fontsize}
+                  ADD(ControlsQueue)
             END
         ELSE
             BREAK !Break when done
@@ -134,7 +134,7 @@ FontSize        LONG
 #At(%WindowManagerMethodCodeSection,'Kill','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(5001),DESCRIPTION('Neo Font Resizer (local) - Kill Section')
     !Added by Neo Font Resizer - START (KILL SECTION)
     FREE(listqueue)
-    FREE(contrlqueue)
+    FREE(ControlsQueue)
     !Added by Neo Font Resizer - END (KILL SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
@@ -153,9 +153,9 @@ NFRSet    PROCEDURE
       	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
         	IF ThisField
           	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
-                 Controlqueue:Id=ThisField
-                 get(ControlQueue,ControlQueue:Id)
-           	     ThisField{Prop:FontSize} = ROUND(ControlQueue:FontSize * Ratio,1)
+                 Controlsqueue:Id=ThisField
+                 get(ControlsQueue,ControlQueue:Id)
+           	     ThisField{Prop:FontSize} = ROUND(ControlsQueue:FontSize * Ratio,1)
             	END
             	IF thisfield{Prop:Type} = Create:List
              	   listqueue:id = thisfield
@@ -182,7 +182,9 @@ NFRReset    PROCEDURE
       	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
         	IF ThisField
           	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
-           	     ThisField{Prop:FontSize} = StartFont
+                 Controlsqueue:Id=ThisField
+                 get(ControlsQueue,ControlQueue:Id)
+                 ThisField{Prop:FontSize} = ControlsQueue:FontSize
             	END
             	IF thisfield{Prop:Type} = Create:List
              	   listqueue:id = thisfield
