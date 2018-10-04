@@ -3,9 +3,9 @@
  #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
  #!------------------------------------------------------------------------------
  #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.07')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.08')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.07'),Application(LocalNeoFontResizer(NeoFontResizer))
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.08'),Application(LocalNeoFontResizer(NeoFontResizer))
 #SHEET
  #TAB('Functions')
   #BOXED('')
@@ -37,7 +37,7 @@
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.07') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.08') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
@@ -154,7 +154,7 @@ NFRSet    PROCEDURE
         	IF ThisField
           	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
                  Controlsqueue:Id=ThisField
-                 get(ControlsQueue,ControlQueue:Id)
+                 get(ControlsQueue,ControlsQueue:Id)
            	     ThisField{Prop:FontSize} = ROUND(ControlsQueue:FontSize * Ratio,1)
             	END
             	IF thisfield{Prop:Type} = Create:List
@@ -183,7 +183,7 @@ NFRReset    PROCEDURE
         	IF ThisField
           	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
                  Controlsqueue:Id=ThisField
-                 get(ControlsQueue,ControlQueue:Id)
+                 get(ControlsQueue,ControlsQueue:Id)
                  ThisField{Prop:FontSize} = ControlsQueue:FontSize
             	END
             	IF thisfield{Prop:Type} = Create:List
