@@ -3,9 +3,9 @@
  #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
  #!------------------------------------------------------------------------------
  #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.08')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.09')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.08'),Application(LocalNeoFontResizer(NeoFontResizer))
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.09'),Application(LocalNeoFontResizer(NeoFontResizer))
 #SHEET
  #TAB('Functions')
   #BOXED('')
@@ -37,7 +37,7 @@
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.08') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.09') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
@@ -65,25 +65,26 @@
 NFRSet								Procedure
 NFRReset							Procedure
 	END
-StartXpos           LONG
-StartYpos           LONG
-StartWidth          LONG
-StartHeight         LONG
-StartFont           LONG
-ThisField           LONG(0)
-WidthRatio          DECIMAL(5,1)
-HeightRatio         DECIMAL(5,1)
-Ratio               DECIMAL(5,1)
+NFRStartXpos           LONG
+NFRStartYpos           LONG
+NFRStartWidth          LONG
+NFRStartHeight         LONG
+NFRStartFont           LONG
+NFRThisField           LONG(0)
+NFRWidthRatio          DECIMAL(5,1)
+NFRHeightRatio         DECIMAL(5,1)
+NFRRatio               DECIMAL(5,1)
 NFRDisable					 BYTE
+NFRColumns             LONG
 
-ListQueue   QUEUE
+NFRListQueue   QUEUE
 Id              LONG,Name('qid')
 ListHeight      LONG
 FontSize        LONG
 ColumnId        LONG,Name('cid')
 ColumnWidth     LONG
             END
-ControlsQueue  QUEUE
+NFRControlsQueue  QUEUE
 Id              LONG
 FontSize        LONG
             END
@@ -92,29 +93,28 @@ FontSize        LONG
 #!------------------------------------------------------------------------------
 #AT(%WindowManagerMethodCodeSection,'Init','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),PRIORITY(8001),Description('Neo Font Resizer (local) - ABC Init')
     !Added by Neo Font Resizer - START (AFTER WINDOW OPEN SECTION)
-    GETPOSITION(0,StartXpos,StartYpos,StartWidth,StartHeight)
-    !StartFont = 0{Prop:FontSize} !Fontsize of the whole window
-    FREE(listqueue)
+    GETPOSITION(0,NFRStartXpos,NFRStartYpos,NFRStartWidth,NFRStartHeight)
+    FREE(NFRlistqueue)
     LOOP
-        ThisField = 0{Prop:NextField,ThisField}  !Process every control
-        IF ThisField
-            IF thisfield{Prop:Type} = Create:List
-                ListQueue:Id         = ThisField
-                ListQueue:ListHeight = ThisField{Prop:LineHeight}
-                ListQueue:FontSize   = Thisfield{Prop:FontSize}
-                columns#             = 1
-                LOOP WHILE thisfield{PropList:Exists,columns#}
-                    listqueue:columnid    = columns#
-                    listqueue:columnwidth = thisfield{PropList:Width,columns#}
-                    ADD(ListQueue)
-                    columns# += 1
+        NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
+        IF NFRThisField
+            IF NFRthisfield{Prop:Type} = Create:List
+                NFRListQueue:Id         = NFRThisField
+                NFRListQueue:ListHeight = NFRThisField{Prop:LineHeight}
+                NFRListQueue:FontSize   = NFRThisfield{Prop:FontSize}
+                NFRcolumns             = 1
+                LOOP WHILE NFRthisfield{PropList:Exists,nfrcolumns}
+                    NFRlistqueue:Columnid    = NFRcolumns
+                    NFRlistqueue:Columnwidth = NFRthisfield{PropList:Width,NFRcolumns}
+                    ADD(NFRListQueue)
+                    NFRcolumns += 1
                 END
-                columns# = 0
+                NFRcolumns = 0
             END
-            IF ThisField{prop:type} <> Create:List
-                  ControlsQueue:Id = ThisField
-                  ControlsQueue:FontSize = ThisField {prop:fontsize}
-                  ADD(ControlsQueue)
+            IF NFRThisField{prop:type} <> Create:List
+                  NFRControlsQueue:Id = NFRThisField
+                  NFRControlsQueue:FontSize = NFRThisField {prop:fontsize}
+                  ADD(NFRControlsQueue)
             END
         ELSE
             BREAK !Break when done
@@ -133,8 +133,8 @@ FontSize        LONG
 #!------------------------------------------------------------------------------
 #At(%WindowManagerMethodCodeSection,'Kill','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(5001),DESCRIPTION('Neo Font Resizer (local) - Kill Section')
     !Added by Neo Font Resizer - START (KILL SECTION)
-    FREE(listqueue)
-    FREE(ControlsQueue)
+    FREE(NFRlistqueue)
+    FREE(NFRControlsQueue)
     !Added by Neo Font Resizer - END (KILL SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
@@ -142,33 +142,33 @@ FontSize        LONG
     !Added by Neo Font Resizer - START (LOCAL PROCEDURE SECTION)
 NFRSet    PROCEDURE
     CODE
-   	WidthRatio  = 0{Prop:At,3}/startwidth
-    	HeightRatio = 0{Prop:At,4}/startheight
-    	IF widthratio < heightratio
-      	  ratio = widthratio
+   	NFRWidthRatio  = 0{Prop:At,3}/NFRstartwidth
+    	NFRHeightRatio = 0{Prop:At,4}/NFRstartheight
+    	IF NFRwidthratio < NFRheightratio
+      	  NFRratio = NFRwidthratio
     	ELSE
-      	  ratio = heightratio
+      	  NFRratio = NFRheightratio
     	END
     	LOOP
-      	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
-        	IF ThisField
-          	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
-                 Controlsqueue:Id=ThisField
-                 get(ControlsQueue,ControlsQueue:Id)
-           	     ThisField{Prop:FontSize} = ROUND(ControlsQueue:FontSize * Ratio,1)
+      	  NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
+        	IF NFRThisField
+          	  IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item
+                 NFRControlsqueue:Id=NFRThisField
+                 get(NFRControlsQueue,NFRControlsQueue:Id)
+           	     NFRThisField{Prop:FontSize} = ROUND(NFRControlsQueue:FontSize * NFRRatio,1)
             	END
-            	IF thisfield{Prop:Type} = Create:List
-             	   listqueue:id = thisfield
-               	 GET(listqueue,listqueue:id)
-                	ThisField{Prop:LineHeight} = ROUND(listqueue:listheight * Ratio,1)
-                	ThisField{Prop:FontSize}   = ROUND(listqueue:fontsize * Ratio,1)
-                	columns#                   = 1
-                	LOOP WHILE thisfield{PropList:Exists,columns#}
-                	    listqueue:id       = thisfield
-                	    listqueue:columnid = columns#
-                	    GET(listqueue,'qid,cid')
-                	    thisfield{PropList:Width,columns#} = ROUND(listqueue:columnwidth * Ratio,1)
-                	    columns# += 1
+            	IF NFRthisfield{Prop:Type} = Create:List
+             	   NFRlistqueue:id = NFRthisfield
+               	 GET(NFRlistqueue,NFRlistqueue:id)
+                	NFRThisField{Prop:LineHeight} = ROUND(NFRlistqueue:listheight * NFRRatio,1)
+                	NFRThisField{Prop:FontSize}   = ROUND(NFRlistqueue:fontsize * NFRRatio,1)
+                	NFRcolumns                   = 1
+                	LOOP WHILE NFRthisfield{PropList:Exists,NFRcolumns}
+                	    NFRlistqueue:id       = NFRthisfield
+                	    NFRlistqueue:columnid = NFRcolumns
+                	    GET(NFRlistqueue,'qid,cid')
+                	    NFRthisfield{PropList:Width,NFRcolumns} = ROUND(NFRlistqueue:columnwidth * NFRRatio,1)
+                	    NFRcolumns += 1
                 	END
             	END
         	ELSE
@@ -179,25 +179,25 @@ NFRSet    PROCEDURE
 NFRReset    PROCEDURE
     CODE
     	LOOP
-      	  ThisField = 0{Prop:NextField,ThisField}  !Process every control
-        	IF ThisField
-          	  IF thisfield{Prop:Type} <> Create:List AND thisfield{Prop:Type} <> Create:Menu AND thisfield{Prop:Type} <> Create:MenuBar AND thisfield{Prop:Type} <> Create:Item
-                 Controlsqueue:Id=ThisField
-                 get(ControlsQueue,ControlsQueue:Id)
-                 ThisField{Prop:FontSize} = ControlsQueue:FontSize
+      	  NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
+        	IF NFRThisField
+          	  IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item
+                 NFRControlsqueue:Id=NFRThisField
+                 get(NFRControlsQueue,NFRControlsQueue:Id)
+                 NFRThisField{Prop:FontSize} = NFRControlsQueue:FontSize
             	END
-            	IF thisfield{Prop:Type} = Create:List
-             	   listqueue:id = thisfield
-               	 GET(listqueue,listqueue:id)
-                	ThisField{Prop:LineHeight} = listqueue:listheight
-                	ThisField{Prop:FontSize}   = listqueue:fontsize
-                	columns#                   = 1
-                	LOOP WHILE thisfield{PropList:Exists,columns#}
-                	    listqueue:id       = thisfield
-                	    listqueue:columnid = columns#
-                	    GET(listqueue,'qid,cid')
-                	    thisfield{PropList:Width,columns#} = listqueue:columnwidth
-                	    columns# += 1
+            	IF NFRthisfield{Prop:Type} = Create:List
+             	   NFRlistqueue:id = NFRthisfield
+               	 GET(NFRlistqueue,NFRlistqueue:id)
+                	NFRThisField{Prop:LineHeight} = NFRlistqueue:listheight
+                	NFRThisField{Prop:FontSize}   = NFRlistqueue:fontsize
+                	NFRcolumns                   = 1
+                	LOOP WHILE NFRthisfield{PropList:Exists,NFRcolumns}
+                	    NFRlistqueue:id       = NFRthisfield
+                	    NFRlistqueue:columnid = NFRcolumns
+                	    GET(NFRlistqueue,'qid,cid')
+                	    NFRthisfield{PropList:Width,NFRcolumns} = NFRlistqueue:columnwidth
+                	    NFRcolumns += 1
                 	END
             	END
         	ELSE
