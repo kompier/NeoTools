@@ -3,9 +3,9 @@
 #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
 #!------------------------------------------------------------------------------
 #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.12')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.13')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.12'),Application(LocalNeoFontResizer(NeoFontResizer))
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.13'),Application(LocalNeoFontResizer(NeoFontResizer))
 #SHEET
     #TAB('Functions')
         #BOXED('')
@@ -33,25 +33,46 @@
             #DISPLAY('Copyright (C) 2018 by Bostjan Laba')
             #DISPLAY('E-Mail: bostjan@neolink.si')
             #DISPLAY('All Rights Reserved')
-            #DISPLAY('')
+            #DISPLAY('')            
         #ENDBOXED
     #ENDTAB
 #ENDSHEET
+
+#AT(%GlobalData),PRIORITY(4100),Description('Neo Font Resizer (global) - Data Declaration '& %NeoFontResizerTPLVersion)
+!Added by Neo Font Resizer - START (GLOBAL DATA SECTION)
+
+NFRGlobalStartXpos           LONG
+NFRGlobalStartYpos           LONG
+NFRGlobalStartWidth          LONG
+NFRGlobalStartHeight         LONG
+NFRGlobalEndWidth	          LONG
+NFRGlobalEndHeight 	         LONG
+NFRGlobalStartFont           LONG
+NFRGlobalThisField           LONG(0)
+NFRGlobalWidthRatio          DECIMAL(6,3)
+NFRGlobalHeightRatio         DECIMAL(6,3)
+NFRGlobalRatio               DECIMAL(6,3)
+NFRGlobalToolbarHeight			 LONG	
+
+!Added by Neo Font Resizer - END (GLOBAL DATA SECTION)
+#ENDAT
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.12') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.13') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
 #ENDRESTRICT
 #RESTRICT,WHERE(%ActiveTemplate <> 'WindowResize(ABC)')
-#ENDRESTRICT
+#ENDRESTRICT  
 #BOXED('')
     #DISPLAY('Neo Font Resizer Version '& %NeoFontResizerTPLVersion),At(10,4)
     #DISPLAY('')
     #Prompt('Disable Neo Font Resizer in this Procedure.',Check),%DisableNeoFontResizerLocal,At(10,16)
-    #DISPLAY('')
+    #DISPLAY('')    
+    #Prompt('Proportionally auto-resize and center window. (does not apply to Frame Procedure)',Check),%NFREnableWindowAutoResize,At(10,28)    
+    #DISPLAY('')    
     #DISPLAY('VERY IMPORTANT:')
     #DISPLAY('Remember to set the Resize Strategy = RESIZE')
     #DISPLAY('')
@@ -63,13 +84,15 @@
     #DISPLAY('')
     #Display('Call NFRSet() to set font sizes')
     #DISPLAY('to proportional size when window is open.')
-    #DISPLAY('')
+    #DISPLAY('')    
 #ENDBOXED
-#AT(%LocalDataAfterClasses),PRIORITY(4000),Where(%DisableNeoFontResizerLocal=%false),Description('Neo Font Resizer (local) - Data Declaration 1.12')
+#AT(%LocalDataAfterClasses),PRIORITY(4000),Where(%DisableNeoFontResizerLocal=%false),Description('Neo Font Resizer (local) - Data Declaration '& %NeoFontResizerTPLVersion)
 !Added by Neo Font Resizer - START (DATA SECTION)
     MAP
-NFRSet                                Procedure
+NFRSet                              Procedure
 NFRReset                            Procedure
+NFRAutoResize												 Procedure
+
     END
 NFRStartXpos           LONG
 NFRStartYpos           LONG
@@ -82,7 +105,6 @@ NFRHeightRatio         DECIMAL(5,1)
 NFRRatio               DECIMAL(5,1)
 NFRDisable                     BYTE
 NFRColumns             LONG
-NFRToolbarId	 	   LONG
 
 NFRListQueue   QUEUE
 Id              LONG,Name('qid')
@@ -98,16 +120,23 @@ FontSize        LONG
 !Added by Neo Font Resizer - END (DATA SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
-#AT(%WindowManagerMethodCodeSection,'Init','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),PRIORITY(8051),Description('Neo Font Resizer (local) - ABC Init 1.12')
+#AT(%WindowManagerMethodCodeSection,'Init','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),PRIORITY(8051),Description('Neo Font Resizer (local) - ABC Init '& %NeoFontResizerTPLVersion)
     !Added by Neo Font Resizer - START (AFTER WINDOW OPEN SECTION)
     GETPOSITION(0,NFRStartXpos,NFRStartYpos,NFRStartWidth,NFRStartHeight)
+    #IF (INSTRING('APPLICATION',%WindowStatement,1,1)>0) 
+      !Set global properties for Frame     
+    	GETPOSITION(0,NFRGlobalStartXpos,NFRGlobalStartYpos,NFRGlobalStartWidth,NFRGlobalStartHeight)
+    #ENDIF
+    !Set IMM and CENTER attributes to current WINDOW
+    If %NFREnableWindowAutoResize=True and UPPER('%ProcedureTemplate')<>'FRAME' and|
+          (NFRGlobalWidthRatio<>1 or NFRGlobalHeightRatio<>1)       
+          0{prop:imm}=True
+          0{prop:center}=True
+ 		End    
     FREE(NFRlistqueue)
     LOOP
         NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
         IF NFRThisField
-		    IF NFRThisField{prop:type} = Create:Toolbar
-			   NFRToolbarId=NFRThisField
-			END			   
             IF NFRthisfield{Prop:Type} = Create:List
                 NFRListQueue:Id         = NFRThisField
                 NFRListQueue:ListHeight = NFRThisField{Prop:LineHeight}
@@ -126,14 +155,23 @@ FontSize        LONG
                   NFRControlsQueue:FontSize = NFRThisField {prop:fontsize}
                   ADD(NFRControlsQueue)
             END
+            IF NFRThisField{prop:type} = Create:Toolbar
+                  NFRGlobalToolbarHeight=NFRThisField{prop:at,4}                  
+            END
         ELSE
             BREAK !Break when done
         END
     END
+    !NFRAutoResize() !call window auto resizer
     !Added by Neo Font Resizer - END (AFTER WINDOW OPEN SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
-#AT(%ResizerMethodCodeSection),Where(%DisableNeoFontResizerLocal=%false AND %pClassMethod='Resize' AND %pClassMethodPrototype='(),BYTE'),PRIORITY(5001),DESCRIPTION('Neo Font Resizer (local) - Resizer Section 1.12')
+#AT(%WindowManagerMethodCodeSection,'Init','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),PRIORITY(8251),Description('Neo Font Resizer (local) - ABC Init '& %NeoFontResizerTPLVersion)
+    !Added by Neo Font Resizer - START (AFTER RESIZER INIT SECTION)
+    NFRAutoResize()
+#ENDAT
+#!------------------------------------------------------------------------------
+#AT(%ResizerMethodCodeSection),Where(%DisableNeoFontResizerLocal=%false AND %pClassMethod='Resize' AND %pClassMethodPrototype='(),BYTE'),PRIORITY(5001),DESCRIPTION('Neo Font Resizer (local) - Resizer Section '& %NeoFontResizerTPLVersion)
     !Added by Neo Font Resizer - START (RESIZER SECTION)?
     If NFRDisable=False     !Resizing remains enabled
          NFRSet()                        !Call the procedure to resize fonts
@@ -141,17 +179,17 @@ FontSize        LONG
     !Added by Neo Font Resizer - END (RESIZER SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
-#At(%WindowManagerMethodCodeSection,'Kill','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(5001),DESCRIPTION('Neo Font Resizer (local) - Kill Section 1.12')
+#At(%WindowManagerMethodCodeSection,'Kill','(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(5001),DESCRIPTION('Neo Font Resizer (local) - Kill Section '& %NeoFontResizerTPLVersion)
     !Added by Neo Font Resizer - START (KILL SECTION)
     FREE(NFRlistqueue)
     FREE(NFRControlsQueue)
     !Added by Neo Font Resizer - END (KILL SECTION)
 #ENDAT
 #!------------------------------------------------------------------------------
-#At(%LocalProcedures,,'(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(8001),DESCRIPTION('Neo Font Resizer (local) - Reset Procedure 1.12')
+#At(%LocalProcedures,,'(),BYTE'),Where(%DisableNeoFontResizerLocal=%false),Priority(8001),DESCRIPTION('Neo Font Resizer (local) - Reset Procedure '& %NeoFontResizerTPLVersion)
     !Added by Neo Font Resizer - START (LOCAL PROCEDURE SECTION)
 NFRSet    PROCEDURE
-    CODE
+    CODE      
        NFRWidthRatio  = 0{Prop:At,3}/NFRstartwidth
         NFRHeightRatio = 0{Prop:At,4}/NFRstartheight
         IF NFRwidthratio < NFRheightratio
@@ -159,11 +197,23 @@ NFRSet    PROCEDURE
         ELSE
             NFRratio = NFRheightratio
         END
+        #IF (INSTRING('APPLICATION',%WindowStatement,1,1)>0)      
+            !Global properties defined when Frame gets resized
+            NFRGlobalWidthRatio  = 0{Prop:At,3}/NFRGlobalstartwidth
+        		 NFRGlobalHeightRatio = 0{Prop:At,4}/NFRGlobalstartheight
+        		 NFRGlobalEndWidth=0{Prop:At,3}
+        		 NFRGlobalEndHeight=0{Prop:At,4}
+        		 IF NFRGlobalwidthratio < NFRGlobalheightratio
+               NFRGlobalratio = NFRGlobalwidthratio
+            ELSE
+               NFRGlobalratio = NFRGlobalheightratio
+        		 END
+        #ENDIF
         LOOP
             NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
             IF NFRThisField
-                IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item and NFRThisField{prop:parent}<>NFRToolbarId
-                NFRControlsqueue:Id=NFRThisField
+                IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item
+                 NFRControlsqueue:Id=NFRThisField
                  get(NFRControlsQueue,NFRControlsQueue:Id)
                     NFRThisField{Prop:FontSize} = ROUND(NFRControlsQueue:FontSize * NFRRatio,1)
                 END
@@ -215,5 +265,26 @@ NFRReset    PROCEDURE
             END
         END
  RETURN
+NFRAutoResize    PROCEDURE
+#DECLARE(%ResizerExists)
+#SET(%ResizerExists,0)
+#For(%ActiveTemplate),Where(%ActiveTemplate='WindowResize(ABC)')
+  #SET(%ResizerExists,1)
+  #BREAK
+#ENDFOR
+    CODE
+        If %NFREnableWindowAutoResize=True and UPPER('%ProcedureTemplate')<>'FRAME' and|
+          (NFRGlobalWidthRatio<>1 or NFRGlobalHeightRatio<>1)          
+          !AutoResize          
+          0{prop:at,3}=NFRStartWidth*NFRGlobalWidthRatio
+          0{prop:at,4}=NFRStartHeight*NFRGlobalHeightRatio
+          0{prop:at,1}=NFRGlobalEndWidth/2-0{prop:at,3}/2
+          0{prop:at,2}=NFRGlobalEndHeight/2-0{prop:at,4}/2-NFRGlobalToolbarHeight
+          #IF (%ResizerExists=1)                     
+           Resizer.resize()
+           nfrset()
+          #ENDIF
+        end	             
+ 	  RETURN
     !Added by Neo Font Resizer - END (LOCAL PROCEDURE SECTION)
 #ENDAT
