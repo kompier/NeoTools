@@ -3,9 +3,9 @@
 #TEMPLATE(NeoFontResizer,'Template that applies Neo Font Resizer Resize to every window'),FAMILY('abc')
 #!------------------------------------------------------------------------------
 #System
-  #EQUATE(%NeoFontResizerTPLVersion,'1.13')
+  #EQUATE(%NeoFontResizerTPLVersion,'1.14')
 #!------------------------------------------------------------------------------
-#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.13'),Application(LocalNeoFontResizer(NeoFontResizer))
+#Extension(ActivateNeoFontResizer,'Activate Neo Font Resizer - Global 1.14'),Application(LocalNeoFontResizer(NeoFontResizer))
 #SHEET
     #TAB('Functions')
         #BOXED('')
@@ -45,21 +45,21 @@ NFRGlobalStartXpos           LONG
 NFRGlobalStartYpos           LONG
 NFRGlobalStartWidth          LONG
 NFRGlobalStartHeight         LONG
-NFRGlobalEndWidth	          LONG
-NFRGlobalEndHeight 	         LONG
+NFRGlobalEndWidth             LONG
+NFRGlobalEndHeight           LONG
 NFRGlobalStartFont           LONG
 NFRGlobalThisField           LONG(0)
 NFRGlobalWidthRatio          DECIMAL(6,3)
 NFRGlobalHeightRatio         DECIMAL(6,3)
 NFRGlobalRatio               DECIMAL(6,3)
-NFRGlobalToolbarHeight			 LONG	
+NFRGlobalToolbarHeight           LONG   
 
 !Added by Neo Font Resizer - END (GLOBAL DATA SECTION)
 #ENDAT
 #!#################################################################################################
 #! End of GLOBAL EXTENSION
 #!#################################################################################################
-#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.13') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
+#Extension(LocalNeoFontResizer,'Neo Font Resizer Object - Local 1.14') #!,Procedure,req(ActivateNeoFontResizer(NeoFontResizer))
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'SOURCE')
 #ENDRESTRICT
 #RESTRICT,WHERE(UPPER(%ProcedureTemplate)<>'REPORT')
@@ -91,7 +91,7 @@ NFRGlobalToolbarHeight			 LONG
     MAP
 NFRSet                              Procedure
 NFRReset                            Procedure
-NFRAutoResize												 Procedure
+NFRAutoResize                       Procedure
 
     END
 NFRStartXpos           LONG
@@ -103,7 +103,7 @@ NFRThisField           LONG(0)
 NFRWidthRatio          DECIMAL(5,1)
 NFRHeightRatio         DECIMAL(5,1)
 NFRRatio               DECIMAL(5,1)
-NFRDisable                     BYTE
+NFRDisable             BYTE
 NFRColumns             LONG
 
 NFRListQueue   QUEUE
@@ -112,6 +112,7 @@ ListHeight      LONG
 FontSize        LONG
 ColumnId        LONG,Name('cid')
 ColumnWidth     LONG
+DropWidth       LONG   !added
             END
 NFRControlsQueue  QUEUE
 Id              LONG
@@ -125,23 +126,26 @@ FontSize        LONG
     GETPOSITION(0,NFRStartXpos,NFRStartYpos,NFRStartWidth,NFRStartHeight)
     #IF (INSTRING('APPLICATION',%WindowStatement,1,1)>0) 
       !Set global properties for Frame     
-    	GETPOSITION(0,NFRGlobalStartXpos,NFRGlobalStartYpos,NFRGlobalStartWidth,NFRGlobalStartHeight)
+        GETPOSITION(0,NFRGlobalStartXpos,NFRGlobalStartYpos,NFRGlobalStartWidth,NFRGlobalStartHeight)
     #ENDIF
     !Set IMM and CENTER attributes to current WINDOW
     If %NFREnableWindowAutoResize=True and UPPER('%ProcedureTemplate')<>'FRAME' and|
           (NFRGlobalWidthRatio<>1 or NFRGlobalHeightRatio<>1)       
           0{prop:imm}=True
           0{prop:center}=True
- 		End    
+        End    
     FREE(NFRlistqueue)
     LOOP
         NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
         IF NFRThisField
-            IF NFRthisfield{Prop:Type} = Create:List
+            IF NFRthisfield{Prop:Type}  = Create:List or  NFRthisfield{Prop:Type} = Create:Combo
                 NFRListQueue:Id         = NFRThisField
                 NFRListQueue:ListHeight = NFRThisField{Prop:LineHeight}
                 NFRListQueue:FontSize   = NFRThisfield{Prop:FontSize}
-                NFRcolumns             = 1
+                if NFRthisfield{PROP:DropWidth}>0
+                     NFRListQueue:DropWidth  = NFRthisfield{PROP:DropWidth}
+                END
+                NFRcolumns              = 1
                 LOOP WHILE NFRthisfield{PropList:Exists,nfrcolumns}
                     NFRlistqueue:Columnid    = NFRcolumns
                     NFRlistqueue:Columnwidth = NFRthisfield{PropList:Width,NFRcolumns}
@@ -150,7 +154,7 @@ FontSize        LONG
                 END
                 NFRcolumns = 0
             END
-            IF NFRThisField{prop:type} <> Create:List
+            IF NFRThisField{prop:type} <> Create:List and NFRThisField{prop:type} <> Create:Combo
                   NFRControlsQueue:Id = NFRThisField
                   NFRControlsQueue:FontSize = NFRThisField {prop:fontsize}
                   ADD(NFRControlsQueue)
@@ -200,28 +204,31 @@ NFRSet    PROCEDURE
         #IF (INSTRING('APPLICATION',%WindowStatement,1,1)>0)      
             !Global properties defined when Frame gets resized
             NFRGlobalWidthRatio  = 0{Prop:At,3}/NFRGlobalstartwidth
-        		 NFRGlobalHeightRatio = 0{Prop:At,4}/NFRGlobalstartheight
-        		 NFRGlobalEndWidth=0{Prop:At,3}
-        		 NFRGlobalEndHeight=0{Prop:At,4}
-        		 IF NFRGlobalwidthratio < NFRGlobalheightratio
+                 NFRGlobalHeightRatio = 0{Prop:At,4}/NFRGlobalstartheight
+                 NFRGlobalEndWidth=0{Prop:At,3}
+                 NFRGlobalEndHeight=0{Prop:At,4}
+                 IF NFRGlobalwidthratio < NFRGlobalheightratio
                NFRGlobalratio = NFRGlobalwidthratio
             ELSE
                NFRGlobalratio = NFRGlobalheightratio
-        		 END
+                 END
         #ENDIF
         LOOP
             NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
             IF NFRThisField
-                IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item
+                IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item AND NFRthisfield{Prop:Type} <> Create:Combo  !added combo
                  NFRControlsqueue:Id=NFRThisField
                  get(NFRControlsQueue,NFRControlsQueue:Id)
                     NFRThisField{Prop:FontSize} = ROUND(NFRControlsQueue:FontSize * NFRRatio,1)
                 END
-                IF NFRthisfield{Prop:Type} = Create:List
+                IF NFRthisfield{Prop:Type} = Create:List or NFRthisfield{Prop:Type} = Create:Combo  !added combo
                     NFRlistqueue:id = NFRthisfield
                     GET(NFRlistqueue,NFRlistqueue:id)
                     NFRThisField{Prop:LineHeight} = ROUND(NFRlistqueue:listheight * NFRRatio,1)
                     NFRThisField{Prop:FontSize}   = ROUND(NFRlistqueue:fontsize * NFRRatio,1)
+                    if NFRlistqueue:DropWidth>0
+                        NFRthisfield{PROP:DropWidth}  = ROUND(NFRListQueue:DropWidth * NFRRatio,1) !added
+                    END
                     NFRcolumns                   = 1
                     LOOP WHILE NFRthisfield{PropList:Exists,NFRcolumns}
                         NFRlistqueue:id       = NFRthisfield
@@ -241,17 +248,20 @@ NFRReset    PROCEDURE
         LOOP
             NFRThisField = 0{Prop:NextField,NFRThisField}  !Process every control
             IF NFRThisField
-                IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item
+                IF NFRthisfield{Prop:Type} <> Create:List AND NFRthisfield{Prop:Type} <> Create:Menu AND NFRthisfield{Prop:Type} <> Create:MenuBar AND NFRthisfield{Prop:Type} <> Create:Item AND NFRthisfield{Prop:Type} <> Create:Combo !added combo
                  NFRControlsqueue:Id=NFRThisField
                  get(NFRControlsQueue,NFRControlsQueue:Id)
                  NFRThisField{Prop:FontSize} = NFRControlsQueue:FontSize
                 END
-                IF NFRthisfield{Prop:Type} = Create:List
+                IF NFRthisfield{Prop:Type} = Create:List or NFRthisfield{Prop:Type} = Create:Combo !added combo
                     NFRlistqueue:id = NFRthisfield
                     GET(NFRlistqueue,NFRlistqueue:id)
                     NFRThisField{Prop:LineHeight} = NFRlistqueue:listheight
                     NFRThisField{Prop:FontSize}   = NFRlistqueue:fontsize
                     NFRcolumns                   = 1
+                    if NFRthisfield{PROP:DropWidth}>0
+                         NFRListQueue:DropWidth  = NFRthisfield{PROP:DropWidth}
+                    END
                     LOOP WHILE NFRthisfield{PropList:Exists,NFRcolumns}
                         NFRlistqueue:id       = NFRthisfield
                         NFRlistqueue:columnid = NFRcolumns
@@ -284,7 +294,7 @@ NFRAutoResize    PROCEDURE
            Resizer.resize()
            nfrset()
           #ENDIF
-        end	             
- 	  RETURN
+        end              
+      RETURN
     !Added by Neo Font Resizer - END (LOCAL PROCEDURE SECTION)
 #ENDAT
